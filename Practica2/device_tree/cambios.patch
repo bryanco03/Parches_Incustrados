@@ -1,0 +1,22 @@
+diff --git a/Practica2/device_tree/kernel_tegra210-p3448-0003-p3542-0000-user-custom.dtb b/Practica2/device_tree/kernel_tegra210-p3448-0003-p3542-0000-user-custom.dtb
+index d0a4076..46c0fa1 100644
+--- a/Practica2/device_tree/kernel_tegra210-p3448-0003-p3542-0000-user-custom.dtb
++++ b/Practica2/device_tree/kernel_tegra210-p3448-0003-p3542-0000-user-custom.dtb
+@@ -4508,7 +4508,7 @@
+ 					active_w = "3840";
+ 					active_h = "2160";
+ 					mode_type = "bayer";
+-					pixel_phase = "rggb";
++					pixel_phase = "grbg";
+ 					csi_pixel_bit_depth = "10";
+ 					readout_orientation = "90";
+ 					line_length = "11200";
+@@ -4546,7 +4546,7 @@
+ 					active_w = "1920";
+ 					active_h = "1080";
+ 					mode_type = "bayer";
+-					pixel_phase = "rggb";
++					pixel_phase = "grbg";
+ 					csi_pixel_bit_depth = "10";
+ 					readout_orientation = "90";
+ 					line_length = "7000";

@@ -34,6 +34,14 @@
 #include "../platform/tegra/camera/camera_gpio.h"
 #include "imx477_mode_tbls.h"
 
+#ifndef PIXEL_PHASE_RGGB
+#define PIXEL_PHASE_RGGB  0
+#define PIXEL_PHASE_GRBG  1
+#define PIXEL_PHASE_GBRG  2
+#define PIXEL_PHASE_BGGR  3
+#endif
+
+
 static const struct of_device_id imx477_of_match[] = {
 	{.compatible = "ridgerun,imx477",},
 	{},
@@ -55,6 +63,8 @@ struct imx477 {
 	u32 frame_length;
 	struct camera_common_data *s_data;
 	struct tegracam_device *tc_dev;
+
+	u8 flip-orientation; /* 0=none, 1=H, 2=V, 3=HV */
 };
 
 static const struct regmap_config sensor_regmap_config = {
@@ -597,6 +607,33 @@ static int imx477_set_mode(struct tegracam_device *tc_dev)
 	if (err)
 		return err;
 
+	
+	        /* 0 = normal, 1 = flip */
+        if (priv->flip_orientation == 1) {
+                /* Flip aplicado */
+                imx477_write_reg(s_data, 0x0101, 0x03);
+                dev_info(tc_dev->dev, "IMX477: Flip enabled\n");
+
+                /* Ajustar el patrón Bayer para flip total */
+                s_data->sensor_props.sensor_modes[s_data->mode_prop_idx]
+                .image_properties.pixel_format = PIXEL_PHASE_BGGR;
+                dev_info(tc_dev->dev, "IMX477: pixel_format = BGGR\n");
+
+        } 
+        else {
+                /* Sin flip */
+                imx477_write_reg(s_data, 0x0101, 0x00);
+                dev_info(tc_dev->dev, "IMX477: Flip disabled\n");
+
+                s_data->sensor_props.sensor_modes[s_data->mode_prop_idx]
+                .image_properties.pixel_format = PIXEL_PHASE_RGGB;
+                dev_info(tc_dev->dev, "IMX477: pixel_format = RGGB\n");
+        }
+
+        err = imx477_write_table(priv, mode_table[s_data->mode]);
+        if (err)
+                return err;
+
 	return 0;
 }
 
@@ -743,6 +780,15 @@ static int imx477_probe(struct i2c_client *client,
 		dev_err(dev, "tegra camera subdev registration failed\n");
 		return err;
 	}
+
+	u32 flip = 0;
+	if (!of_property_read_u32(client->dev.of_node, "flip-orientation", &flip)) {
+    	priv->flip_orientation = flip & 0x03; /* solo 2 bits */
+    	dev_info(dev, "IMX477: flip orientation = %u\n", priv->flip_orientation);
+	}
+
+
+
 
 	dev_dbg(dev, "detected imx477 sensor\n");
 

@@ -4497,6 +4497,9 @@
 				linux,phandle = <0xff>;
 				phandle = <0xff>;
 
+				flip-orientation = <1>;  /* 0=none, 1=flip */
+
+
 				mode0 {
 					mclk_khz = "24000";
 					num_lanes = [32 00];

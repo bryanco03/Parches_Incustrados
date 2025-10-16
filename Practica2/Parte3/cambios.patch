@@ -1,0 +1,91 @@
+diff --git a/Practica2/Parte3/imx477.c b/Practica2/Parte3/imx477.c
+index 8f436bb..2a93c3f 100644
+--- a/Practica2/Parte3/imx477.c
++++ b/Practica2/Parte3/imx477.c
+@@ -55,6 +55,8 @@ struct imx477 {
+ 	u32 frame_length;
+ 	struct camera_common_data *s_data;
+ 	struct tegracam_device *tc_dev;
++
++	u8 flip-orientation; /* 0=none, 1=H, 2=V, 3=HV */
+ };
+ 
+ static const struct regmap_config sensor_regmap_config = {
+@@ -596,6 +598,15 @@ static int imx477_set_mode(struct tegracam_device *tc_dev)
+ 	err = imx477_write_table(priv, mode_table[s_data->mode]);
+ 	if (err)
+ 		return err;
++		/* Apply orientation settings */
++		if (priv->flip_orientation) {
++           imx477_write_reg(s_data, 0x0101, priv->flip_orientation);
++           dev_info(tc_dev->dev, "IMX477: set orientation reg=0x%02x\n", priv->flip_orientation);
++        }
++	
++        err = imx477_write_table(priv, mode_table[s_data->mode]);
++        if (err)
++                return err;
+ 
+ 	return 0;
+ }
+@@ -744,6 +755,15 @@ static int imx477_probe(struct i2c_client *client,
+ 		return err;
+ 	}
+ 
++	u32 flip = 0;
++	if (!of_property_read_u32(client->dev.of_node, "flip-orientation", &flip)) {
++    	priv->flip_orientation = flip & 0x03; /* solo 2 bits */
++    	dev_info(dev, "IMX477: flip orientation = %u\n", priv->flip_orientation);
++	}
++
++
++
++
+ 	dev_dbg(dev, "detected imx477 sensor\n");
+ 
+ 	return 0;
+diff --git a/Practica2/Parte3/imx477_mode_tbls.h b/Practica2/Parte3/imx477_mode_tbls.h
+index 795bbd5..ff8fbe1 100644
+--- a/Practica2/Parte3/imx477_mode_tbls.h
++++ b/Practica2/Parte3/imx477_mode_tbls.h
+@@ -41,8 +41,7 @@ static const imx477_reg imx477_stop[] = {
+ static const imx477_reg imx477_mode_common[] = {
+ 	/* software reset */
+ 	{0x0103, 0x01},
+-	{IMX477_TABLE_WAIT_MS, IMX477_WAIT_MS*10},
+-	{0x0101, 0x02}, 
++	{IMX477_TABLE_WAIT_MS, IMX477_WAIT_MS*10} 
+ 	{0x0136, 0x18},
+ 	{0x0137, 0x00},
+ 	{0x0808, 0x02},
+@@ -356,8 +355,7 @@ static const imx477_reg imx477_mode_3840x2160_30fps[] = {
+ 	{0x0114, 0x01},
+ 	{0x0342, 0x2B},
+ 	{0x0343, 0xC0},
+-	{0x0340, 0x09},
+-	{0x0101, 0x02}, 
++	{0x0340, 0x09}, 
+ 	{0x0341, 0xC4},
+ 	{0x0344, 0x00},
+ 	{0x0345, 0x00},
+@@ -475,7 +473,6 @@ static const imx477_reg imx477_mode_1920x1080_60fps[] = {
+ 	{0x0114, 0x01},
+ 	{0x0342, 0x1B},
+ 	{0x0343, 0x58},
+-	{0x0101, 0x02},
+ 	{0x0340, 0x07},
+ 	{0x0341, 0xD0},
+ 	{0x0344, 0x00},
+diff --git a/Practica2/Parte3/kernel_tegra210-p3448-0003-p3542-0000-user-custom.dtb b/Practica2/Parte3/kernel_tegra210-p3448-0003-p3542-0000-user-custom.dtb
+index 46c0fa1..0ed68ef 100644
+--- a/Practica2/Parte3/kernel_tegra210-p3448-0003-p3542-0000-user-custom.dtb
++++ b/Practica2/Parte3/kernel_tegra210-p3448-0003-p3542-0000-user-custom.dtb
+@@ -4497,6 +4497,9 @@
+ 				linux,phandle = <0xff>;
+ 				phandle = <0xff>;
+ 
++				flip-orientation = <1>;  /* 0=none, 1=  H flip, 2= V flip, 3= H + V flip */
++
++
+ 				mode0 {
+ 					mclk_khz = "24000";
+ 					num_lanes = [32 00];

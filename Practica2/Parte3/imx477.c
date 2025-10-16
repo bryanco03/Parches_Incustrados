@@ -34,14 +34,6 @@
 #include "../platform/tegra/camera/camera_gpio.h"
 #include "imx477_mode_tbls.h"
 
-#ifndef PIXEL_PHASE_RGGB
-#define PIXEL_PHASE_RGGB  0
-#define PIXEL_PHASE_GRBG  1
-#define PIXEL_PHASE_GBRG  2
-#define PIXEL_PHASE_BGGR  3
-#endif
-
-
 static const struct of_device_id imx477_of_match[] = {
 	{.compatible = "ridgerun,imx477",},
 	{},
@@ -606,30 +598,12 @@ static int imx477_set_mode(struct tegracam_device *tc_dev)
 	err = imx477_write_table(priv, mode_table[s_data->mode]);
 	if (err)
 		return err;
-
-	
-	        /* 0 = normal, 1 = flip */
-        if (priv->flip_orientation == 1) {
-                /* Flip aplicado */
-                imx477_write_reg(s_data, 0x0101, 0x03);
-                dev_info(tc_dev->dev, "IMX477: Flip enabled\n");
-
-                /* Ajustar el patrón Bayer para flip total */
-                s_data->sensor_props.sensor_modes[s_data->mode_prop_idx]
-                .image_properties.pixel_format = PIXEL_PHASE_BGGR;
-                dev_info(tc_dev->dev, "IMX477: pixel_format = BGGR\n");
-
-        } 
-        else {
-                /* Sin flip */
-                imx477_write_reg(s_data, 0x0101, 0x00);
-                dev_info(tc_dev->dev, "IMX477: Flip disabled\n");
-
-                s_data->sensor_props.sensor_modes[s_data->mode_prop_idx]
-                .image_properties.pixel_format = PIXEL_PHASE_RGGB;
-                dev_info(tc_dev->dev, "IMX477: pixel_format = RGGB\n");
+		/* Apply orientation settings */
+		if (priv->flip_orientation) {
+           imx477_write_reg(s_data, 0x0101, priv->flip_orientation);
+           dev_info(tc_dev->dev, "IMX477: set orientation reg=0x%02x\n", priv->flip_orientation);
         }
-
+	
         err = imx477_write_table(priv, mode_table[s_data->mode]);
         if (err)
                 return err;

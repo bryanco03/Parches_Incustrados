@@ -4497,7 +4497,7 @@
 				linux,phandle = <0xff>;
 				phandle = <0xff>;
 
-				flip-orientation = <1>;  /* 0=none, 1=flip */
+				flip-orientation = <1>;  /* 0=none, 1=  H flip, 2= V flip, 3= H + V flip */
 
 
 				mode0 {
